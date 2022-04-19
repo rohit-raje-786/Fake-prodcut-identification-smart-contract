@@ -4,16 +4,7 @@ pragma solidity ^0.8.0;
 
 
 contract AssetTracker {
-    string id;
- 
-    function setId(string memory serial) public {
-          id = serial;
-    }
- 
-    function getId() public view returns (string memory) {
-          return id;
-    }
-
+   
     struct Asset {
     string name;
     string description;
@@ -25,74 +16,108 @@ contract AssetTracker {
     string addressTo;
     bool initialized;    
     bool arrived;
+    uint distributorId;
 }
 
-mapping(string  => Asset) private assetStore;
+ struct Person{ //struct for distributor
+        uint id;
+        string name;
+        string add;
+        string email;
+        string phone;
+    }
 
+    mapping(uint  => Person) private distributorStruct;
+    uint public distributorCount=0;
+    uint public assetCount=0;
 
-mapping(address => mapping(string => bool)) private walletStore;
+    event RejectDistributor(string  name,string  add,string  email,string  phone);
 
+     function insertDistributor(string memory name,string memory add,string memory email,string memory phone) public returns(bool)
+    {
+        for(uint i=0;i<distributorCount;i++){
+                require(keccak256(abi.encodePacked((distributorStruct[i].email))) != keccak256(abi.encodePacked(("123@gmail.com"))),"Distributor already exists");
+        }
+        distributorStruct[distributorCount]=Person(distributorCount,name,add,email,phone);
+        distributorCount++;
+        return true;
+    }
 
+    function getDistributorbyId(uint id)public view returns(string memory,string memory,string memory,string memory){
+        return (distributorStruct[id].name,distributorStruct[id].add,distributorStruct[id].email,distributorStruct[id].phone);
+    }
 
-event AssetCreate(address account, string uuid,uint cost ,uint quantity ,string manufacturer,string customer,string addressFrom,string addressTo);
-event RejectCreate(address account, string uuid, string message);
-event AssetTransfer(address from, address to, string uuid);
-event RejectTransfer(address from, address to, string uuid, string message);
-
-function createAsset(string memory name, string memory description, string memory uuid,uint cost,uint quantity, string memory manufacturer,string memory customer ,string memory addressFrom,string memory addressTo) public {
- 
-    if(assetStore[uuid].initialized) {
-        emit RejectCreate(msg.sender, uuid, "Asset with this UUID already exists.");
-        return;
+    function getAlldistributors()public view returns (Person[] memory){
+      Person[]   memory id = new Person[](distributorCount);
+      for (uint i = 0; i < distributorCount; i++) {
+          Person storage member = distributorStruct[i];
+          id[i] = member;
       }
- 
-      assetStore[uuid] = Asset(name, description,cost,quantity,manufacturer,customer,addressFrom,addressTo,true,false);
-      walletStore[msg.sender][uuid] = true;
-      emit AssetCreate(msg.sender, uuid,cost,quantity,manufacturer,customer,addressFrom,addressTo);
-}
-
-
-
-function transferAsset(address to, string memory uuid) public{
- 
-    if(!assetStore[uuid].initialized) {
-        emit  RejectTransfer(msg.sender, to, uuid, "No asset with this UUID exists");
-        return;
+      return id;
     }
- 
-    if(!walletStore[msg.sender][uuid]) {
-        emit RejectTransfer(msg.sender, to, uuid, "Sender does not own this asset.");
-        return;
-    }
- 
-    walletStore[msg.sender][uuid] = false;
-    walletStore[to][uuid] = true;
-    emit AssetTransfer(msg.sender, to, uuid);
-}
 
-function getAssetByUUID(string memory uuid) public view returns (string memory, string memory,string memory,string memory,string memory,string memory,bool arrived) {
- 
-    return (assetStore[uuid].name,assetStore[uuid].description,assetStore[uuid].manufacturer,assetStore[uuid].customer,assetStore[uuid].addressFrom,assetStore[uuid].addressTo,assetStore[uuid].arrived);
+    function balance(uint _amount) public pure returns(bool){
+        require(_amount<20,"Balance need to be greater than 20");
+        return true;
+    }
+//end of distributor
+
+mapping(uint  => Asset) private assetStore;
+
+
+mapping(address => mapping(uint => bool)) private walletStore;
+
+
+
+
+function createAsset(string memory name, string memory description, uint distributorId,uint cost,uint quantity, string memory manufacturer,string memory customer ,string memory addressFrom,string memory addressTo) public {
+      
+    
+      assetStore[assetCount] = Asset(name, description,cost,quantity,manufacturer,customer,addressFrom,addressTo,true,false,distributorId);
+      walletStore[msg.sender][assetCount] = true;
+      assetCount++;
     
 }
 
- function getItemByUUID(string memory uuid) public view returns(uint cost,uint quantity){
-        return (assetStore[uuid].cost,assetStore[uuid].quantity);
+
+function transferAsset(address to, uint i) public{
+    require(assetStore[assetCount].initialized==true,"No asset with this UUID exists");
+
+ 
+    require(walletStore[msg.sender][i]==true,"Sender does not own this asset.");
+ 
+ 
+    walletStore[msg.sender][i] = false;
+    walletStore[to][i] = true;
 }
 
-function isOwnerOf(address owner, string memory uuid) public view returns (bool) {
+
+ function getItemByUUID(uint i) public view returns(uint cost,uint quantity){
+        require(i<=assetCount,"Asset does not exists");
+        return (assetStore[i].cost,assetStore[i].quantity);
+}
+
+function isOwnerOf(address owner, uint i) public view returns (bool) {
  
-    if(walletStore[owner][uuid]) {
+    if(walletStore[owner][i]) {
         return true;
     }
- 
     return false;
+}
+
+function getAllAssets() public view returns(Asset[] memory){
+    Asset[]   memory x = new Asset[](assetCount);
+      for (uint i = 0; i < assetCount; i++) {
+          Asset storage member = assetStore[i];
+          x[i] = member;
+      }
+      return x;
 }
 
 //consumer end 
 
-function Arrived(string memory uuid) public { 
-   assetStore[uuid].arrived=true;
+function Arrived(uint i) public { 
+   assetStore[i].arrived=true;
 }
 
 

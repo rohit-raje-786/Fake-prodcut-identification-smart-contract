@@ -10,7 +10,7 @@ const main = async () => {
   let assetCreate = await assetTrackerContract.createAsset(
     "covishield",
     "vaccine",
-    "1",
+    0,
     50,
     1,
     "serum",
@@ -18,36 +18,10 @@ const main = async () => {
     "mumbai",
     "gujrat"
   );
+  console.log("asset Created", assetCreate.hash);
 
-  console.log(assetCreate.hash);
-  // await assetCreate.wait();
-  // let data = {
-  //   uuid: 1,
-  //   name: "covishield",
-  //   description: "vaccine",
-  //   manufacturer: "serum",
-  //   customer: "rohit",
-  // };
-
-  // let strData = JSON.stringify(data);
-
-  // qr.toString(strData, { type: "terminal" }, function (err, code) {
-  //   if (err) return console.log("error occurred");
-
-  //   console.log(code);
-  // });
-
-  // qr.toDataURL(strData, function (err, code) {
-  //   if (err) return console.log("error occurred");
-
-  //   console.log(code);
-  // });
-  // console.log("Asset Created");
-
-  // let assetbyuuid = await assetTrackerContract.getAssetByUUID("1");
-  // console.log("Asset Details: ", assetbyuuid);
-
-  // let owner=await assetTrackerContract.isOwnerOf("")
+  let assets = await assetTrackerContract.getAllAssets();
+  console.log("assets", assets);
 };
 
 const runMain = async () => {
